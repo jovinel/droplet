@@ -1,0 +1,35 @@
+# Issue #2 — React/Vite + Convex + Cloudflare Pages foundation
+
+## Goal
+
+Create a small, deployable React/TypeScript Vite application connected to a hosted Convex backend. Done means a clean install typechecks and builds to `dist`, a development deployment answers a simple Convex query visible in the browser, and documented Cloudflare Pages settings build the same frontend against the matching Convex deployment. Do not claim a live production deployment without access to the owner's accounts.
+
+## Scope
+
+In: frontend scaffold, one backend connectivity query, typed Convex client, tracked generated API code, gitignore/environment hygiene, and instructions for local development and Pages production/preview builds. Out: signup/QR/survey UI, production data schema or seed data, authentication, Cloudflare Workers, custom domains, and provisioning external accounts or committing deploy credentials.
+
+## Phases
+
+1. **Preserve current project context and scaffold the frontend.** First integrate the current `origin/master` into `factory/issue-2` (PR #3 has merged since the triage checkout); retain its expanded `README.md` content. Scaffold the official `react-ts` Vite starter at repository root without creating another nested Git repo. Add `package.json`, `package-lock.json`, `index.html`, `src/main.tsx`, `src/App.tsx`, `src/index.css`, TypeScript/Vite configs and `.gitignore` (ignore `node_modules`, `dist`, `.env*` except a safe `.env.example`, and credentials). Replace generic starter branding with a minimal Droplet shell; do not build the future signup flow. **Verify:** `npm ci`, `npm run build`, `npx tsc --noEmit -p tsconfig.app.json` (or the scaffold's equivalent typecheck command), and confirm `dist/index.html` exists; no browser or backend credentials required yet.
+2. **Wire up Convex without inventing a product schema.** Install `convex`. Add `convex/health.ts` with a read-only `check` query returning a fixed readiness value; add `ConvexReactClient`/`ConvexProvider` in `src/main.tsx` using `import.meta.env.VITE_CONVEX_URL`, and render the query result via `useQuery(api.health.check)` in `src/App.tsx`. Give an explicit configuration message when the URL is absent, rather than constructing a client with an invalid URL; keep that check narrow and test both configured/unconfigured behavior. Configure a *hosted development deployment* with project-owner access (`npx convex dev --once --configure --dev-deployment cloud` when initializing; run `npx convex deployment select dev` before `npx convex dev --once` if previously configured for local use) to generate `convex/_generated` and push the function; commit the generated code, not `.env.local` or keys. Do not silently accept the CLI's anonymous local-backend fallback (it contradicts the hosted-backend request). **Verify:** `npx convex run health:check`, `npm run build`, `npx tsc --noEmit -p tsconfig.app.json`, and `npm run dev` with a real `VITE_CONVEX_URL`, checking the browser displays readiness. If cloud credentials are unavailable, report backend smoke test/deploy as blocked; never substitute a fake generated API or claim a live connection. This health query demonstrates connectivity, not persistence; actual tables belong to the later signup feature.
+3. **Document and verify Cloudflare Pages deployment.** Extend the merged `README.md` without losing its product description. Include Vite's required Node versions (20.19+ or 22.12+), `npm ci`, Convex cloud development login/configuration and `npx convex dev --once --configure --dev-deployment cloud` for first-time initialization, local `npm run dev`, environment variable purpose and secret handling, and Pages Git integration at repo root with output `dist` and a compatible `NODE_VERSION` build environment setting. Set the Pages build command to `npx convex deploy --cmd 'npm run build' --cmd-url-env-var-name VITE_CONVEX_URL`; document `CONVEX_DEPLOY_KEY` as a secret with a production key for production and a separate preview key for preview builds so previews cannot push to production. Avoid committing any `.env` containing credentials; `VITE_CONVEX_URL` is public, whereas deploy keys must never use the `VITE_` prefix. **Verify:** `npm ci`, `npm run build` and typecheck from a clean checkout; with authorized keys, test a preview Pages build and its backend query, then production build/deploy as available. If external accounts are inaccessible, verify the local build and document the unverified remote steps explicitly rather than asserting deployment succeeded.
+
+## Risks
+
+- PR #3 merged after this branch was cut: integrate latest master before editing README to avoid dropping the product description.
+- `convex/_generated` is required for typechecking; use real Convex codegen and commit it. Backend pushes/production deployment need owner-provided cloud access and must never expose keys in Git or client bundles.
+- Pages preview builds must not reuse the production deploy key. Check each deployment's target and generated `VITE_CONVEX_URL` before interpreting a green build as proof of isolation.
+- A static frontend build alone does not prove Convex connectivity. Confirm the live query in a browser against the appropriate deployment when credentials are available.
+
+## Assumptions
+
+- Verified on `factory/issue-2`: commit `63b4374` contains only `README.md:1`; no app, tests, backend, or deployment conventions exist. `origin/master` now includes merged documentation PR #3 (`ad8a0d0`), so the earlier triage note that PR #3 is open is stale; this changes README preservation, not the feature scope.
+- Use official React/TypeScript Vite and npm defaults because this is a new application with no repository precedent; reject a custom bundler, framework router, or test harness before there is a feature to exercise.
+- Use Cloudflare **Pages** as requested, despite Workers being another hosting option; no Cloudflare server runtime or self-hosted database is necessary for this static frontend plus Convex.
+- Use a read-only health query to demonstrate the integration; reject a speculative signup schema, seed records, or fake backend connection. A real database write/read test belongs with the eventual data feature.
+- Require a cloud development deployment rather than anonymous local Convex; choose a typed, generated Convex API rather than unchecked ad-hoc function references. Account provisioning and secrets remain with the owner.
+- Build frontend and backend in one Pages build command so `VITE_CONVEX_URL` points to the deployment actually receiving the functions. Separate preview and production credentials; never make a production push solely for local verification.
+
+## Open questions
+
+None needed to implement the scaffold. Live deployment and hosted smoke verification require owner-provided Convex/Cloudflare access; if unavailable, report those checks as blocked rather than modifying scope or claiming completion.
