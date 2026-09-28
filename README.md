@@ -33,7 +33,7 @@ npm run dev
 
 The frontend needs `VITE_CONVEX_URL` pointing to that deployment. Copy `.env.example` to `.env.local` and replace the example URL if Convex has not populated it. Without a URL, the app shows a configuration message rather than connecting. `npx convex run health:check` should return `{ "ready": true }` once the query has been pushed. The URL is public client configuration; Convex credentials and deploy keys are secrets and must never use the `VITE_` prefix.
 
-Run `npm run build`, `npx tsc --noEmit -p tsconfig.app.json`, and `npm run lint` to check the app. The production build is emitted to `dist`.
+Run `npm test` to verify the missing-URL screen and the configured Convex loading/ready states with a controlled query response. Run `npm run build`, `npx tsc --noEmit -p tsconfig.app.json`, and `npm run lint` for the other checks. The production build is emitted to `dist`.
 
 ### Cloudflare Pages
 
